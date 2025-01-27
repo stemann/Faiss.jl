@@ -1,4 +1,3 @@
-ENV["JULIA_PYTHONCALL_EXE"] = "/home/zhangyong/miniconda3/bin/python"
 using Pkg, Faiss, SimilaritySearch, LinearAlgebra, JLD2
 
 

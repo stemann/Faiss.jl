@@ -1,10 +1,6 @@
-ENV["JULIA_PYTHONCALL_EXE"] = "/home/zhangyong/miniconda3/bin/python"
 using Faiss
-using PythonCall
 using ProgressMeter
 using NearestNeighbors
-# np = pyimport("numpy")
-
 
 function test()
     dir_1 = "/mnt/zy_data/data/longhu_1/sorted_2/"

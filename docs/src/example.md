@@ -2,7 +2,6 @@
 
 ## example 1 
 ```julia
-ENV["JULIA_PYTHONCALL_EXE"] = "/home/xx/miniconda3/bin/python"
 using Faiss
 
 println("faiss:", Faiss.faiss.__version__, ", gpus:", ENV["CUDA_VISIBLE_DEVICES"], 
@@ -29,7 +28,6 @@ println(D[1:5, :])
 ## example 2
 #### A simple test comparison
 ```julia
-ENV["JULIA_PYTHONCALL_EXE"] = "/home/xx/miniconda3/bin/python"
 using Faiss
 using NearestNeighbors
 
@@ -62,11 +60,8 @@ used time on my machine (2022.3):
 ## example 3
 ```julia
 
-ENV["JULIA_PYTHONCALL_EXE"] = "/home/xx/miniconda3/bin/python"
 using Faiss
-using PythonCall
 using ProgressMeter
-# np = pyimport("numpy")
 
 function test()
     dir_1 = "/mnt/xx_data/data/longhu_1/sorted_2/"

@@ -4,10 +4,10 @@ authors = ["zhangyong <github.com/zsz00>", "Christopher Doris <github.com/cjdori
 version = "0.3.5"
 
 [deps]
-CondaPkg = "992eb4ea-22a4-4c89-a5bb-47a3300528ab"
-PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
+CEnum = "fa961155-64e5-5f13-b03f-caf6b980ea82"
+Faiss_jll = "d7fe3460-1609-53b1-864c-4d331a5b7338"
 
 [compat]
-CondaPkg = "0.2.6"
-PythonCall = "0.5, 0.6, 0.7, 0.8, 0.9"
+CEnum = "0.5.0"
+Faiss_jll = "1.9.0"
 julia = "1.6"
