@@ -5,9 +5,18 @@ version = "0.3.5"
 
 [deps]
 CEnum = "fa961155-64e5-5f13-b03f-caf6b980ea82"
+Faiss_CUDA_jll = "57154dfa-8ce1-53a2-a7ab-dcd9e58fb5bc"
 Faiss_jll = "d7fe3460-1609-53b1-864c-4d331a5b7338"
+
+[weakdeps]
+CUDA_Runtime_jll = "76a88914-d11a-5bdc-97e0-2f5a05c973a2"
+
+[extensions]
+CUDAExt = "CUDA_Runtime_jll"
 
 [compat]
 CEnum = "0.5.0"
-Faiss_jll = "1.9.0"
+CUDA_Runtime_jll = "0.14, 0.15, 0.16"
+Faiss_CUDA_jll = "1"
+Faiss_jll = "1"
 julia = "1.6"

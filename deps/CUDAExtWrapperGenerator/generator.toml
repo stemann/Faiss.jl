@@ -1,0 +1,6 @@
+[general]
+library_name = "libfaiss_c"
+output_file_path = "../../ext/CUDAExt/Wrapper.jl"
+module_name = "Wrapper"
+jll_pkg_name = "Faiss_CUDA_jll"
+export_symbol_prefixes = ["faiss"]
