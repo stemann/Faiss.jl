@@ -7,8 +7,17 @@ For basic usage, see [`Index`](@ref), [`add`](@ref), [`search`](@ref), [`add_wit
 """
 module Faiss
 
-export Index, add, search, range_search, add_with_ids, remove_with_ids, add_search, 
-local_rank, add_search_with_ids
+export
+    add_search_with_ids,
+    add_search,
+    add_with_ids,
+    add,
+    index_factory,
+    index_factory_gpu,
+    local_rank,
+    range_search,
+    remove_with_ids,
+    search
 
 include(joinpath(@__DIR__, "Wrapper.jl"))
 
@@ -24,43 +33,42 @@ include(joinpath(@__DIR__, "Wrapper.jl"))
 end
 
 mutable struct Index
-    ref::Ref{Wrapper.FaissIndex}
+    ptr::Ptr{Wrapper.FaissIndex}
 
-    function Index(ref::Ref{Wrapper.FaissIndex})
-        this = new(ref)
-        finalizer(idx -> Wrapper.faiss_Index_free(idx.ref), this)
+    function Index(ptr::Ptr{Wrapper.FaissIndex})
+        this = new(ptr)
+        finalizer(idx -> Wrapper.faiss_Index_free(idx.ptr), this)
         return this
     end
 end
 
 mutable struct IndexIDMap
-    ref::Ref{Wrapper.FaissIndexIDMap}
+    ptr::Ptr{Wrapper.FaissIndexIDMap}
 
-    function IndexIDMap(ref::Ref{Wrapper.FaissIndexIDMap})
-        this = new(ref)
-        finalizer(idx -> Wrapper.faiss_Index_free(idx.ref), this) # TODO Not sure if this is correct
+    function IndexIDMap(ptr::Ptr{Wrapper.FaissIndexIDMap})
+        this = new(ptr)
+        finalizer(idx -> Wrapper.faiss_Index_free(idx.ptr), this) # TODO Not sure if this is correct
         return this
     end
 end
 
-# cpu index
-function Index(dim::Integer, str::AbstractString="Flat", metric::Metric=MetricL2)
-    faiss_index = Ref{Wrapper.FaissIndex}()
+function index_factory(dim::Integer, description::AbstractString="Flat"; metric::Metric=MetricL2)
+    faiss_index = Ref{Ptr{Wrapper.FaissIndex}}()
     error_code = Wrapper.faiss_index_factory(
-        pointer_from_objref(faiss_index),
-        convert(Cint, dim),
-        convert(String, str),
+        faiss_index,
+        Cint(dim),
+        String(description),
         Wrapper.FaissMetricType(UInt32(metric))
     )
     if error_code != Wrapper.OK
         message = unsafe_string(Wrapper.faiss_get_last_error())
         error(message)
     end
-    Index(faiss_index)
+    Index(faiss_index[])
 end
 
 """
-    Index(dim::Integer; str::AbstractString="Flat", metric::String="L2", gpus::String="")
+    index_factory_gpu(dim::Integer; str::AbstractString="Flat", metric::String="L2", gpus::String="")
 
 Create a Faiss index of the given parameters:
 - The `dim` is denote dimension of data to Index.
@@ -68,16 +76,16 @@ Create a Faiss index of the given parameters:
 - The `metric` is a metric of distance, have "L2", "IP"
 - The `gpus` is a string of setting gpu id. if "" denote use cpu.
 """
-function Index(dim::Integer; str::AbstractString="Flat", metric::Metric=MetricL2, gpus::String="")
+function index_factory_gpu(dim::Integer; description::AbstractString="Flat", metric::Metric=MetricL2, gpus::String="")
     # feat data is stored here. When the amount of data is huge, it is easy to overflow the GPU memory.
     ENV["CUDA_VISIBLE_DEVICES"] = gpus
-    str_list = split(str, ",")
-    if "IDMap2" in str_list
-        str = join(str_list[str_list .!="IDMap2"] , ",")  # py faiss not support IDMap2.
-        cpu_index = Index(dim, str, metric)
-        cpu_index = Wrapper.faiss_IndexIDMap2_cast(cpu_index.ref)
+    description_list = split(description, ",")
+    if "IDMap2" in description_list
+        description = join(description_list[description_list .!="IDMap2"] , ",")  # py faiss not support IDMap2.
+        cpu_index = index_factory(dim, description; metric)
+        cpu_index = Wrapper.faiss_IndexIDMap2_cast(cpu_index.ptr)
     else
-        cpu_index = Index(dim, str, metric)
+        cpu_index = index_factory(dim, description; metric)
     end
 
     if gpus == ""
@@ -95,7 +103,7 @@ function Index(dim::Integer; str::AbstractString="Flat", metric::Metric=MetricL2
         index = faiss.index_cpu_to_all_gpus(cpu_index)  # use all gpus
     end
 
-    if "IDMap2" in str_list || "IDMap" in str_list
+    if "IDMap2" in description_list || "IDMap" in description_list
         return IndexIDMap(index)
     else
         return Index(index)
@@ -104,16 +112,16 @@ end
 
 function Base.getproperty(idx::Index, name::Symbol)
     if name == :d
-        return Wrapper.faiss_Index_d(idx.ref)
-    elseif name == :metric_type
-        return Metric(UInt32(Wrapper.faiss_Index_metric_type(idx.ref)))
+        return Wrapper.faiss_Index_d(idx.ptr)
+    elseif name == :metric
+        return Metric(UInt32(Wrapper.faiss_Index_metric_type(idx.ptr)))
     elseif name == :ntotal
-        return Wrapper.faiss_Index_ntotal(idx.ref)
+        return Wrapper.faiss_Index_ntotal(idx.ptr)
     end
     return getfield(idx, name)
 end
 
-Base.propertynames(::Index) = (:d, :metric_type, :ntotal, fieldnames(Index)...)
+Base.propertynames(::Index) = (:d, :metric, :ntotal, fieldnames(Index)...)
 
 """
     size(idx::Union{Index, IndexIDMap})
@@ -130,19 +138,19 @@ Base.size(idx::Union{Index, IndexIDMap}, i::Integer) =
 """
 function Base.show(io::IO, ::MIME"text/plain", idx::Index)
     println(io, typeof(idx), " of ", size(idx, 2), " vectors of dimension ", size(idx, 1), 
-    ", metric: ", idx.metric_type)
+    ", metric: ", idx.metric)
 end
 
 """
-    add(idx::Index, vs::AbstractMatrix)
+    add(idx::Index, vs::AbstractMatrix{<:AbstractFloat})
 
 Add the columns of `vs` to the index.
 """
-function add(idx::Index, vs::AbstractMatrix)
-    size(vs, 2) == size(idx, 1) || error("expecting $(size(idx, 1)) rows")
-    vs_ = convert(AbstractMatrix{Float32}, vs)
-    # vs_ = np.array(pyrowlist(vs_), dtype=np.float32)
-    error_code = Wrapper.faiss_Index_add(idx.ref, n, vs_)
+function add(idx::Index, vs::AbstractMatrix{<:AbstractFloat})
+    size(vs, 1) == idx.d || throw(ArgumentError("Input matrix must have $(idx.d) rows"))
+    n = size(vs, 2)
+    vs = Float32.(vs)
+    error_code = Wrapper.faiss_Index_add(idx.ptr, n, vs)
     if error_code != Wrapper.OK
         message = unsafe_string(Wrapper.faiss_get_last_error())
         error(message)
@@ -151,16 +159,15 @@ function add(idx::Index, vs::AbstractMatrix)
 end
 
 """
-    add_with_ids(idx::IndexIDMap, vs::AbstractMatrix, ids::Array{Int64})
+    add_with_ids(idx::IndexIDMap, vs::AbstractMatrix{<:AbstractFloat}, ids::Array{Int64})
 
 """
-function add_with_ids(idx::IndexIDMap, vs::AbstractMatrix, ids::Array{Int64})
-    size(vs, 2) == size(idx, 1) || error("expecting $(size(idx, 1)) rows")
-    size(vs, 1) == size(ids, 1) || error("expecting $(size(vs, 1)) rows")
-    vs_ = convert(AbstractMatrix{Float32}, vs)
-    # vs_ = np.array(pyrowlist(vs_), dtype=np.float32)
-    # ids_ = np.array(pyrowlist(ids), dtype=np.int64)
-    error_code = Wrapper.faiss_Index_add_with_ids(idx.ref, n, vs_, ids)
+function add_with_ids(idx::IndexIDMap, vs::AbstractMatrix{<:AbstractFloat}, ids::Array{Int64})
+    size(vs, 1) == idx.d || throw(ArgumentError("Input matrix must have $(idx.d) rows"))
+    size(vs, 2) == size(ids, 1) || error("expecting $(size(vs, 1)) rows")
+    n = size(vs, 2)
+    vs = Float32.(vs)
+    error_code = Wrapper.faiss_Index_add_with_ids(idx.ptr, n, vs, ids)
     if error_code != Wrapper.OK
         message = unsafe_string(Wrapper.faiss_get_last_error())
         error(message)
@@ -175,43 +182,43 @@ end
 function remove_with_ids(idx::IndexIDMap, ids::Array{Int64})
     # ids_ = np.array(pyrowlist(ids), dtype=np.int64)
     n_removed = Ref{Csize_t}(0)
-    error_code = Wrapper.faiss_Index_remove_ids(idx.ref, ids, n_removed)
+    error_code = Wrapper.faiss_Index_remove_ids(idx.ptr, ids, n_removed)
     if error_code != Wrapper.OK
         message = unsafe_string(Wrapper.faiss_get_last_error())
         error(message)
     end
+    return n_removed[]
 end
 
 """
-    search(idx::Union{Index, IndexIDMap}, vs::AbstractMatrix, k::Integer)
+    search(idx::Union{Index, IndexIDMap}, vs::AbstractMatrix{<:AbstractFloat}, k::Integer)
 
 Search the index for the `k` nearest neighbours of each column of `vs`.
 
 Return `(D, I)` where `I` is a matrix where each column gives the ids of the `k` nearest
 neighbours of the corresponding column of `vs` and `D` is the corresponding matrix of distances.
 """
-function search(idx::Union{Index, IndexIDMap}, vs::AbstractMatrix, k::Integer)
-    size(vs, 2) == size(idx, 1) || error("expecting $(size(idx, 1)) rows")
-    vs_ = convert(AbstractMatrix{Float32}, vs)
-    # vs_ = np.array(pyrowlist(vs_), dtype=np.float32)
-    k_ = convert(Cint, k)
+function search(idx::Union{Index, IndexIDMap}, vs::AbstractMatrix{<:AbstractFloat}, k::Integer)::Tuple{Matrix{Float32}, Matrix{Int64}}
+    size(vs, 1) == idx.d || throw(ArgumentError("Input matrix must have $(idx.d) rows"))
+    n = size(vs, 2)
+    vs = Float32.(vs)
+    k = Wrapper.idx_t(k)
 
-    size_1 = size(vs, 1)
-    D = zeros(Float32, (size_1, k))
-    I = zeros(Int32, (size_1, k))
+    D = zeros(Float32, (k, n))
+    I = zeros(Wrapper.idx_t, (k, n))
     if idx.ntotal == 0
-        if idx.metric_type == MetricL2
+        if idx.metric == MetricL2
             D = D .+ 2
         end
     else
-        error_code = Wrapper.faiss_Index_search(idx.ref, n, vs_, k_, pointer(D), pointer(I))
+        error_code = Wrapper.faiss_Index_search(idx.ptr, n, vs, k, D, I)
         if error_code != Wrapper.OK
             message = unsafe_string(Wrapper.faiss_get_last_error())
             error(message)
         end
     end
     I = I .+ 1
-    return (D, I)
+    return D, I
 end
 
 """
@@ -222,14 +229,13 @@ Search the index for the distance < radius neighbours of each column of `vs`.
 Return `(D, I)` where `I` is a matrix where each column gives the ids of the `k` nearest
 neighbours of the corresponding column of `vs` and `D` is the corresponding matrix of distances.
 """
-function range_search(idx::Union{Index, IndexIDMap}, vs::AbstractMatrix, threshold::Real=0.0)
+function range_search(idx::Union{Index, IndexIDMap}, vs::AbstractMatrix, threshold::Real=0.0)::Tuple{Matrix{Float32}, Matrix{Int64}}
     size(vs, 2) == size(idx, 1) || error("expecting $(size(idx, 1)) rows")
     vs_ = convert(AbstractMatrix{Float32}, vs)
-    # vs_ = np.array(pyrowlist(vs_), dtype=np.float32)
     th_ = convert(Float32, threshold)
 
     result = Ref{FaissRangeSearchResult}()
-    error_code = Wrapper.faiss_Index_range_search(idx.ref, n, vs_, th_, result)
+    error_code = Wrapper.faiss_Index_range_search(idx.ptr, n, vs_, th_, result)
     if error_code != Wrapper.OK
         message = unsafe_string(Wrapper.faiss_get_last_error())
         error(message)
@@ -238,7 +244,7 @@ function range_search(idx::Union{Index, IndexIDMap}, vs::AbstractMatrix, thresho
     Wrapper.faiss_RangeSearchResult_nq(result, nq)
     size_1 = size(vs, 1)
     D = zeros(Float32, (size_1, nq[]))
-    I = zeros(Int32, (size_1, nq[]))
+    I = zeros(Wrapper.idx_t, (size_1, nq[]))
     Wrapper.faiss_RangeSearchResult_labels(result, pointer_from_objref(D), pointer_from_objref(I))
     I = I .+ 1
     return (D, I)
@@ -293,17 +299,9 @@ neighbours of the corresponding column of `vs` and `D` is the corresponding matr
 function local_rank(vs_query::AbstractMatrix, vs_gallery::AbstractMatrix; k::Integer=10, 
                     str::String="Flat", metric::String="L2", gpus::String="")
     feat_dim = size(vs_query, 2)
-    idx = Index(feat_dim; str=str, metric=metric, gpus=gpus)
+    idx = index_factory_gpu(feat_dim; str=str, metric=metric, gpus=gpus)
     D, I = add_search(idx, vs_query, vs_gallery; k=k)
     return (D, I)
 end
-
-
-"""
-    downcast(idx::Index)
-
-Return the same index downcasted to its most specific type.
-"""
-downcast(idx::Index) = Index(faiss.downcast_index(idx.py)) # TODO find downcast_index in C API
 
 end # module

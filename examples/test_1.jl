@@ -11,7 +11,7 @@ function test()
     # D, I = local_rank(vs_query, vs_gallery, k=10, metric="IP", gpus="")
 
     feat_dim = size(feats, 2)
-    idx = Index(feat_dim; str="IDMap,Flat", metric="IP", gpus="4")  # IDMap2. L2,IP
+    idx = index_factory_gpu(feat_dim; str="IDMap,Flat", metric="IP", gpus="4")  # IDMap2. L2,IP
     Faiss.show(idx)
     k = 10
     @showprogress for i in range(1, 1000)
@@ -65,7 +65,7 @@ function faiss_test_2()
     vs_query = feats[1:10^2, :];
 
     feat_dim = size(feats, 2)
-    idx = Index(feat_dim; str="Flat", metric="IP", gpus="")  # IDMap2. L2,IP  IDMap2,
+    idx = index_factory_gpu(feat_dim; str="Flat", metric="IP", gpus="")  # IDMap2. L2,IP  IDMap2,
     Faiss.show(idx)
 
     add(idx, vs_gallery)

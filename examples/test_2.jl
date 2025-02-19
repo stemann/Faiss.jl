@@ -31,7 +31,7 @@ function faiss_index(X, Q, k)
 	# str = "Flat"
 	metric = "L2"  # L2  IP
 	gpus = ""
-	idx = Faiss.Index(dim; str, metric, gpus)  # init Faiss Index
+	idx = Faiss.index_factory_gpu(dim; str, metric, gpus)  # init Faiss Index
 	show(idx)   # show idx info
 	add(idx, permutedims(X))
 	D, I = Faiss.search(idx, permutedims(Q), k)
