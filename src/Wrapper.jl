@@ -1427,6 +1427,79 @@ function faiss_read_index_binary_fname(fname, io_flags, p_out)
     ccall((:faiss_read_index_binary_fname, libfaiss_c), Cint, (Ptr{Cchar}, Cint, Ptr{Ptr{FaissIndexBinary}}), fname, io_flags, p_out)
 end
 
+function faiss_pairwise_L2sqr(d, nq, xq, nb, xb, dis, ldq, ldb, ldd)
+    ccall((:faiss_pairwise_L2sqr, libfaiss_c), Cvoid, (Int64, Int64, Ptr{Cfloat}, Int64, Ptr{Cfloat}, Ptr{Cfloat}, Int64, Int64, Int64), d, nq, xq, nb, xb, dis, ldq, ldb, ldd)
+end
+
+function faiss_pairwise_L2sqr_with_defaults(d, nq, xq, nb, xb, dis)
+    ccall((:faiss_pairwise_L2sqr_with_defaults, libfaiss_c), Cvoid, (Int64, Int64, Ptr{Cfloat}, Int64, Ptr{Cfloat}, Ptr{Cfloat}), d, nq, xq, nb, xb, dis)
+end
+
+function faiss_fvec_inner_products_ny(ip, x, y, d, ny)
+    ccall((:faiss_fvec_inner_products_ny, libfaiss_c), Cvoid, (Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Csize_t, Csize_t), ip, x, y, d, ny)
+end
+
+function faiss_fvec_L2sqr_ny(dis, x, y, d, ny)
+    ccall((:faiss_fvec_L2sqr_ny, libfaiss_c), Cvoid, (Ptr{Cfloat}, Ptr{Cfloat}, Ptr{Cfloat}, Csize_t, Csize_t), dis, x, y, d, ny)
+end
+
+function faiss_fvec_norm_L2sqr(x, d)
+    ccall((:faiss_fvec_norm_L2sqr, libfaiss_c), Cfloat, (Ptr{Cfloat}, Csize_t), x, d)
+end
+
+function faiss_fvec_norms_L2(norms, x, d, nx)
+    ccall((:faiss_fvec_norms_L2, libfaiss_c), Cvoid, (Ptr{Cfloat}, Ptr{Cfloat}, Csize_t, Csize_t), norms, x, d, nx)
+end
+
+function faiss_fvec_norms_L2sqr(norms, x, d, nx)
+    ccall((:faiss_fvec_norms_L2sqr, libfaiss_c), Cvoid, (Ptr{Cfloat}, Ptr{Cfloat}, Csize_t, Csize_t), norms, x, d, nx)
+end
+
+function faiss_fvec_renorm_L2(d, nx, x)
+    ccall((:faiss_fvec_renorm_L2, libfaiss_c), Cvoid, (Csize_t, Csize_t, Ptr{Cfloat}), d, nx, x)
+end
+
+function faiss_set_distance_compute_blas_threshold(value)
+    ccall((:faiss_set_distance_compute_blas_threshold, libfaiss_c), Cvoid, (Cint,), value)
+end
+
+# no prototype is found for this function at distances_c.h:84:5, please use with caution
+function faiss_get_distance_compute_blas_threshold()
+    ccall((:faiss_get_distance_compute_blas_threshold, libfaiss_c), Cint, ())
+end
+
+function faiss_set_distance_compute_blas_query_bs(value)
+    ccall((:faiss_set_distance_compute_blas_query_bs, libfaiss_c), Cvoid, (Cint,), value)
+end
+
+# no prototype is found for this function at distances_c.h:90:5, please use with caution
+function faiss_get_distance_compute_blas_query_bs()
+    ccall((:faiss_get_distance_compute_blas_query_bs, libfaiss_c), Cint, ())
+end
+
+function faiss_set_distance_compute_blas_database_bs(value)
+    ccall((:faiss_set_distance_compute_blas_database_bs, libfaiss_c), Cvoid, (Cint,), value)
+end
+
+# no prototype is found for this function at distances_c.h:96:5, please use with caution
+function faiss_get_distance_compute_blas_database_bs()
+    ccall((:faiss_get_distance_compute_blas_database_bs, libfaiss_c), Cint, ())
+end
+
+function faiss_set_distance_compute_min_k_reservoir(value)
+    ccall((:faiss_set_distance_compute_min_k_reservoir, libfaiss_c), Cvoid, (Cint,), value)
+end
+
+# no prototype is found for this function at distances_c.h:104:5, please use with caution
+function faiss_get_distance_compute_min_k_reservoir()
+    ccall((:faiss_get_distance_compute_min_k_reservoir, libfaiss_c), Cint, ())
+end
+
+# no prototype is found for this function at utils_c.h:21:13, please use with caution
+function faiss_get_version()
+    ccall((:faiss_get_version, libfaiss_c), Ptr{Cchar}, ())
+end
+
 const FAISS_IO_FLAG_MMAP = 1
 
 const FAISS_IO_FLAG_READ_ONLY = 2
