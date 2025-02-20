@@ -10,12 +10,27 @@ function run_tests()
     end
 end
 
+blas_defined = haskey(ENV, "BLAS")
+if blas_defined
+    blas = ENV["BLAS"]
+    @info "Ensuring selected BLAS is loaded: $blas"
+    if blas == "AppleAccelerate"
+        using AppleAccelerate
+    elseif blas == "MKL"
+        using MKL
+    elseif blas == "OpenBLAS"
+        # OpenBLAS should already be loaded
+    end
+end
+
 run_tests()
 
-if Sys.ARCH == :x86_64 && (Sys.islinux() || Sys.iswindows())
-    using MKL
-    run_tests()
-elseif Sys.isapple()
-    using AppleAccelerate
-    run_tests()
+if !blas_defined
+    if Sys.ARCH == :x86_64 && (Sys.islinux() || Sys.iswindows())
+        using MKL
+        run_tests()
+    elseif Sys.isapple()
+        using AppleAccelerate
+        run_tests()
+    end
 end
