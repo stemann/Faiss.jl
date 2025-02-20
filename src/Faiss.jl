@@ -7,6 +7,8 @@ For basic usage, see [`Index`](@ref), [`add`](@ref), [`search`](@ref), [`add_wit
 """
 module Faiss
 
+using OpenBLAS32
+
 export
     add_search_with_ids,
     add_search,

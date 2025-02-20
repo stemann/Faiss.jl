@@ -7,6 +7,7 @@ version = "0.3.5"
 CEnum = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 Faiss_CUDA_jll = "57154dfa-8ce1-53a2-a7ab-dcd9e58fb5bc"
 Faiss_jll = "d7fe3460-1609-53b1-864c-4d331a5b7338"
+OpenBLAS32 = "51095b67-9e93-468d-a683-508b52f74e81"
 
 [weakdeps]
 CUDA_Runtime_jll = "76a88914-d11a-5bdc-97e0-2f5a05c973a2"
@@ -19,12 +20,16 @@ CEnum = "0.5.0"
 CUDA_Runtime_jll = "0.14, 0.15, 0.16"
 Faiss_CUDA_jll = "1"
 Faiss_jll = "1"
+OpenBLAS32 = "0.1.0"
 julia = "1.6"
 
 [extras]
+AppleAccelerate = "13e28ba4-7ad8-5781-acae-3021b1ed3924"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+MKL = "33e6dc65-8f57-5167-99aa-e5a354878fb2"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Distances", "Random", "Test"]
+test = ["AppleAccelerate", "Distances", "LinearAlgebra", "MKL", "Random", "Test"]
