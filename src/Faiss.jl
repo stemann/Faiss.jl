@@ -21,9 +21,9 @@ export
     remove_with_ids,
     search
 
-function get_num_gpus end
-
 include(joinpath(@__DIR__, "Wrapper.jl"))
+
+include(joinpath(@__DIR__, "computational_resources.jl"))
 
 @enum Metric::UInt32 begin
     MetricInnerProduct = 0

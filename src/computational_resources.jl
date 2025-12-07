@@ -1,0 +1,5 @@
+abstract type AbstractComputationalResourceProvider end
+
+struct ComputationalResourceProviderCUDA <: AbstractComputationalResourceProvider end
+
+function get_device_count end
