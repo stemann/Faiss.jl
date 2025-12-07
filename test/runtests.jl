@@ -10,6 +10,23 @@ function run_tests()
     end
 end
 
+
+function run_cuda_ext_tests()
+    @info "Running tests with CUDA extension"
+
+    # Hack to use CUDA 12.1
+    preferences = Dict("CUDA_Runtime_jll" => Dict("version" => "12.1"))
+    preferences_path = joinpath(pwd(), "LocalPreferences.toml")
+    open(preferences_path, "w") do io
+      write(io, raw"""
+[CUDA_Runtime_jll]
+version = "12.1"
+""")
+    end
+
+    include("cuda_ext_tests.jl")
+end
+
 blas_defined = haskey(ENV, "BLAS")
 if blas_defined
     blas = ENV["BLAS"]
@@ -34,3 +51,5 @@ if !blas_defined
         run_tests()
     end
 end
+
+run_cuda_ext_tests()
