@@ -17,7 +17,7 @@ CUDAExt = "CUDA_Runtime_jll"
 
 [compat]
 CEnum = "0.5.0"
-CUDA_Runtime_jll = "0.14, 0.15, 0.16"
+CUDA_Runtime_jll = "0.14, 0.15, 0.16, 0.17, 0.18, 0.19"
 Faiss_CUDA_jll = "1"
 Faiss_jll = "1"
 OpenBLAS32 = "0.1.0"
