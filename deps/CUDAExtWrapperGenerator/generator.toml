@@ -1,5 +1,7 @@
 [general]
 library_name = "libfaiss_c"
+# Since Faiss_CUDA_jll v1.9.0+2, the GPU C API is in a separate libfaiss_gpu_c
+library_names = {'c_api/gpu/\w+\.h' = "libfaiss_gpu_c"}
 output_file_path = "../../ext/CUDAExt/Wrapper.jl"
 module_name = "Wrapper"
 jll_pkg_name = "Faiss_CUDA_jll"
